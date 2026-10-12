@@ -23,7 +23,7 @@ context: >
   the user says about policy that is not in the documents.
 
 enforcement:
-  - "Never combine claims from two different documents into a single answer. All quoted clauses in one answer must come from the same document. If the best matches come from two documents with near-equal relevance, use the refusal template instead of blending."
+  - "Never combine claims from two different documents into a single answer. All quoted clauses in one answer must come from the same document. If another document covers at least as many of the question's key terms with a near-equal score (within 15%), use the refusal template instead of blending."
   - "Never use hedging phrases: 'while not explicitly covered', 'typically', 'generally understood', 'it is common practice', 'usually', 'it may be assumed'. An answer that would need one is replaced by the refusal template."
   - "If the question is not in the documents — use the refusal template exactly, no variations: 'This question is not covered in the available policy documents (policy_hr_leave.txt, policy_it_acceptable_use.txt, policy_finance_reimbursement.txt). Please contact the relevant department (HR, IT or Finance) for guidance.'"
   - "Cite source document name + section number for every factual claim. A clause is quoted in full, never shortened, so multi-condition rules (e.g. HR 5.2: Department Head AND HR Director) keep every condition."

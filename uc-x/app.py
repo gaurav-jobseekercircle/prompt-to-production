@@ -45,6 +45,7 @@ a an the i me my we our you your is are am be been can could do does did to of f
 with from as and or if it its this that what which who whom when where how why will would should
 may must any all about there their they them have has had get got use used using company view
 policy policies cmc employee employees staff allowed permitted please tell know work working many much
+take taking apply need needs make go want
 """.split())
 
 # Multi-word phrases indexed as one term, so "leave without pay" and "LWP" match.
@@ -148,15 +149,16 @@ def _question_concepts(question: str) -> list:
 
 
 def _score(clause: dict, concepts: list, index: dict):
-    matched_weight, total_weight = 0.0, 0.0
+    matched_weight, total_weight, matched_count = 0.0, 0.0, 0
     for alternatives in concepts:
         weight = max(index["idf"].get(a, index["max_idf"]) for a in alternatives)
         total_weight += weight
         hits = [index["idf"][a] for a in alternatives if a in clause["terms"]]
         if hits:
             matched_weight += max(hits)
+            matched_count += 1
     coverage = matched_weight / total_weight if total_weight else 0.0
-    return matched_weight, coverage
+    return matched_weight, coverage, matched_count
 
 
 def _is_scope_clause(text: str) -> bool:
@@ -173,21 +175,24 @@ def answer_question(question: str, index: dict) -> str:
 
     scored = []
     for clause in index["clauses"]:
-        score, coverage = _score(clause, concepts, index)
+        score, coverage, matched = _score(clause, concepts, index)
         if score > 0:
-            scored.append((score, coverage, clause))
+            scored.append((score, coverage, clause, matched))
     scored.sort(key=lambda s: -s[0])
     if not scored:
         return REFUSAL_TEMPLATE
 
-    best_score, best_coverage, best = scored[0]
+    best_score, best_coverage, best, best_matched = scored[0]
     if best_coverage < MIN_COVERAGE:
         return REFUSAL_TEMPLATE
 
-    # Anti-blending: if another document is almost as relevant, the question
-    # straddles two policies — refuse rather than merge them.
-    other_doc = next((s for s in scored if s[2]["document"] != best["document"]), None)
-    if other_doc and other_doc[1] >= MIN_COVERAGE and other_doc[0] >= CROSS_DOC_MARGIN * best_score:
+    # Anti-blending: if another document is almost as relevant — covering as many of
+    # the question's key terms with a near-equal score — the question straddles two
+    # policies, so refuse rather than merge them.
+    other_doc = max((s for s in scored if s[2]["document"] != best["document"]),
+                    key=lambda s: (s[3], s[0]), default=None)
+    if (other_doc and other_doc[1] >= MIN_COVERAGE and other_doc[3] >= best_matched
+            and other_doc[0] >= CROSS_DOC_MARGIN * best_score):
         return REFUSAL_TEMPLATE
 
     # Supporting clauses: same document only, and each must itself cover the question.

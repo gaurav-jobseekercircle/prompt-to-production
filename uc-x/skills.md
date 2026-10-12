@@ -27,8 +27,10 @@ skills:
     error_handling: >
       Empty question -> ask the user to type a question. Best clause covers fewer than
       half of the question's key terms -> refusal template (prevents hedged
-      hallucination). Top-scoring clauses from two different documents within 15% of
-      each other -> refusal template (prevents cross-document blending). Answer text
+      hallucination). A clause from a second document that matches as many of the question's
+      key terms and scores within 15% of the best -> refusal template (prevents
+      cross-document blending). Generic verbs (take, apply, need) are not counted as
+      key terms, so they cannot push a covered question into a refusal. Answer text
       is checked for hedging phrases before it is returned; if any appear the refusal
       template is returned instead. Clauses are quoted in full so no condition is
       dropped. Permission questions ("Can I…") that match only a prohibition also get
