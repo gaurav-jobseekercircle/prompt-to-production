@@ -31,4 +31,6 @@ skills:
       each other -> refusal template (prevents cross-document blending). Answer text
       is checked for hedging phrases before it is returned; if any appear the refusal
       template is returned instead. Clauses are quoted in full so no condition is
-      dropped.
+      dropped. Permission questions ("Can I…") that match only a prohibition also get
+      the same section's scope-setting "may … only" clause, so the answer states what is
+      permitted as well as what is not (condition dropping).

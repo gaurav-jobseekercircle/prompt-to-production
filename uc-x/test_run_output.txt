@@ -20,6 +20,8 @@ Source: policy_finance_reimbursement.txt
 ----------------------------------------------------------------------------------------
 Q4: Can I use my personal phone to access work files when working from home?
 Source: policy_it_acceptable_use.txt
+[policy_it_acceptable_use.txt, section 3.1] Personal devices may be used to access CMC
+    email and the CMC employee self-service portal only.
 [policy_it_acceptable_use.txt, section 3.2] Personal devices must not be used to access,
     store, or transmit classified or sensitive CMC data.
 ----------------------------------------------------------------------------------------

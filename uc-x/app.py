@@ -75,6 +75,11 @@ CLAUSE_RE = re.compile(r"^(\d+\.\d+)\s+(.*)$")
 MIN_COVERAGE = 0.5          # share of question key terms a clause must contain
 CROSS_DOC_MARGIN = 0.85     # second document this close to the best -> ambiguous, refuse
 MAX_CLAUSES = 3
+SCOPE_COVERAGE = 0.3        # a permission-scope clause needs at least this much overlap
+
+# "Can I ...?" questions are answered by what the policy permits, so the
+# clause that sets the boundary ("X may ... only") must be quoted with them.
+PERMISSION_QUESTION_RE = re.compile(r"^\s*(can|may|am i allowed|are we allowed|is it allowed)\b", re.IGNORECASE)
 
 
 def _stem(word: str) -> str:
@@ -154,6 +159,12 @@ def _score(clause: dict, concepts: list, index: dict):
     return matched_weight, coverage
 
 
+def _is_scope_clause(text: str) -> bool:
+    """A clause that grants something and limits it in the same breath: 'may ... only'."""
+    return re.search(r"\bmay\b", text, re.IGNORECASE) is not None and \
+        re.search(r"\bonly\b", text, re.IGNORECASE) is not None
+
+
 def answer_question(question: str, index: dict) -> str:
     """Return a single-source answer with citations, or the refusal template."""
     concepts = _question_concepts(question)
@@ -180,8 +191,26 @@ def answer_question(question: str, index: dict) -> str:
         return REFUSAL_TEMPLATE
 
     # Supporting clauses: same document only, and each must itself cover the question.
-    chosen = [s[2] for s in scored
-              if s[2]["document"] == best["document"] and s[1] >= MIN_COVERAGE][:MAX_CLAUSES]
+    supporting = [s[2] for s in scored[1:]
+                  if s[2]["document"] == best["document"] and s[1] >= MIN_COVERAGE]
+
+    # Permission questions also get the scope-setting clause from the same section,
+    # so the answer says what IS allowed, not only what is forbidden.
+    scope = []
+    if PERMISSION_QUESTION_RE.search(question):
+        best_section = best["section"].split(".")[0]
+        scope = [s[2] for s in scored
+                 if s[2] is not best
+                 and s[2]["document"] == best["document"]
+                 and s[2]["section"].split(".")[0] == best_section
+                 and s[1] >= SCOPE_COVERAGE
+                 and _is_scope_clause(s[2]["text"])]
+
+    chosen = []
+    for c in [best] + scope + supporting:
+        if c not in chosen:
+            chosen.append(c)
+    chosen = chosen[:MAX_CLAUSES]
     chosen.sort(key=lambda c: [int(p) for p in c["section"].split(".")])
 
     lines = [f"Source: {best['document']}"]
